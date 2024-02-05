@@ -40,5 +40,4 @@ $ npm run preview
 ```
 
 ### Fuentes
-1. [¿QUÉ hace VITE en REACT? ⚡¿Cómo funciona un DEV SERVER? 🔵 Curso de React desde cero #3](https://www.youtube.com/watch?v=J_ZmtP9xNg8)
-2. 
+1. [¿QUÉ hace VITE en REACT? ⚡¿Cómo funciona un DEV SERVER? 🔵 Curso de React desde cero #3](https://www.youtube.com/watch?v=J_ZmtP9xNg8) 

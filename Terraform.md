@@ -73,9 +73,15 @@ Al igual que en *apply*, esto permite ejecutar el comando previamente autorizado
 $ terraform destroy -auto-approve
 ```
 
+## [Variables](https://developer.hashicorp.com/terraform/language/values/variables)
+
+se utilizó un archivo `*.tfvars` para cargar las variables. 
+
+
 ### Fuentes:
 1. [Qué es Infrastructure as Code? Whiteboarding - IaC Series, Parte 1](https://www.youtube.com/watch?v=7IPeCZAZxjM&t=198s)
 2. [Aprendé Terraform en minutos: Explicado más simple, imposible! - IaC Series, Parte 2](https://www.youtube.com/watch?v=e8ke3pi1ROI)
 3. [Curso Completo De Terraform | De Principiante A Profesional. Aprende Infraestructura Como Código IaC](https://www.youtube.com/watch?v=Z94DYoF5ufg)
 4. [Docs overview | hashicorp/aws | Terraform | Terraform Registry](https://registry.terraform.io/providers/hashicorp/aws/latest/docs)
 5. [aws_instance | Resources | hashicorp/aws | Terraform | Terraform Registry](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/instance)
+6. [Input Variables - Configuration Language | Terraform | HashiCorp Developer](https://developer.hashicorp.com/terraform/language/values/variables)

@@ -43,6 +43,7 @@ $ apt-get install -y nginx
 
 $ docker cp -a /home/feli/Documentos/docker_volumes/dist/. ubuntu_nginx:/var/www/sa_practica1
 
+Crear un nuevo archivo en /etc/nginx/sites-enabled
 $ cd /etc/nginx/sites-enabled
 ```
 

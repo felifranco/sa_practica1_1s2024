@@ -85,3 +85,27 @@ se utilizó un archivo `*.tfvars` para cargar las variables.
 4. [Docs overview | hashicorp/aws | Terraform | Terraform Registry](https://registry.terraform.io/providers/hashicorp/aws/latest/docs)
 5. [aws_instance | Resources | hashicorp/aws | Terraform | Terraform Registry](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/instance)
 6. [Input Variables - Configuration Language | Terraform | HashiCorp Developer](https://developer.hashicorp.com/terraform/language/values/variables)
+
+
+
+https://spacelift.io/blog/terraform-docker
+https://registry.terraform.io/providers/kreuzwerker/docker/latest/docs
+
+
+https://www.youtube.com/watch?v=QxgJlJgGA0E
+
+https://www.youtube.com/watch?v=6MUpuoffbTg
+
+
+
+
+
+
+
+
+
+
+
+
+
+

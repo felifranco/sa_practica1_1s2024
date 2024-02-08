@@ -1,3 +1,5 @@
+# SSH files
+/ssh/*
 # Local .terraform directories
 **/.terraform/*
 

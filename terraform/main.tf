@@ -86,23 +86,6 @@ resource "aws_instance" "ansible" {
   security_groups             = [aws_security_group.nginx.id]
   key_name                    = aws_key_pair.access_key.key_name
 
-  provisioner "remote-exec" {
-    inline = [
-      "sudo apt update",
-      "sudo apt install software-properties-common -y",
-      "sudo add-apt-repository --yes --update ppa:ansible/ansible",
-      "sudo apt install ansible -y",
-      "cd /home/ubuntu"
-    ]
-
-    connection {
-      type        = "ssh"
-      user        = var.ssh_user
-      private_key = file(var.private_key_path)
-      host        = aws_instance.ansible.public_ip
-    }
-  }
-
   provisioner "file" {
     source      = "../ansible/nginx_from_ec2.yml"
     destination = "/home/ubuntu/nginx_from_ec2.yml"
@@ -114,4 +97,37 @@ resource "aws_instance" "ansible" {
       host        = aws_instance.ansible.public_ip
     }
   }
+
+  provisioner "file" {
+    source      = "./ssh/key_pair"
+    destination = "/home/ubuntu/key_pair"
+
+    connection {
+      type        = "ssh"
+      user        = var.ssh_user
+      private_key = file(var.private_key_path)
+      host        = aws_instance.ansible.public_ip
+    }
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "sudo apt update",
+      "sudo apt install software-properties-common -y",
+      "sudo add-apt-repository --yes --update ppa:ansible/ansible",
+      "sudo apt install ansible -y",
+      "cd /home/ubuntu",
+      "echo nginx_ec2 ansible_host=${aws_instance.nginx.public_ip} ansible_connection=ssh ansible_user=${var.ssh_user} >> hosts",
+      "chmod 400 key_pair",
+      "ansible-playbook --private-key key_pair nginx_from_ec2.yml -i hosts"
+    ]
+
+    connection {
+      type        = "ssh"
+      user        = var.ssh_user
+      private_key = file(var.private_key_path)
+      host        = aws_instance.ansible.public_ip
+    }
+  }
 }
+

@@ -31,6 +31,13 @@ resource "aws_security_group" "nginx" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  ingress {
+    from_port   = 81
+    to_port     = 81
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
@@ -87,8 +94,8 @@ resource "aws_instance" "ansible" {
   key_name                    = aws_key_pair.access_key.key_name
 
   provisioner "file" {
-    source      = "../ansible/nginx_from_ec2.yml"
-    destination = "/home/ubuntu/nginx_from_ec2.yml"
+    source      = "../ansible/"
+    destination = "/home/ubuntu"
 
     connection {
       type        = "ssh"

@@ -7,12 +7,17 @@
         update-cache: yes
   - name: Instalar Nginx -> "apt install nginx"
     apt: name=nginx state=present
+  - name: Copiar sitio web React+Vite
+    copy:
+        src: /home/ubuntu/
+        dest: /var/www/sa_practica1
+        remote_src: true
   - name: Crear archivo de configuración en Nginx para el sitio web copiado
     copy:
         dest: /etc/nginx/sites-enabled/sa_practica1
         content: "server {
-                        listen 80;
-                        listen [::]:80;
+                        listen 81;
+                        listen [::]:81;
   
                         #server_name example.ubuntu.com;
 
@@ -23,10 +28,6 @@
                                 try_files $uri $uri/ =404;
                         }
                   }"
-  - name: Eliminar archivo 'default' en sites-enabled para eliminar el sitio predeterminado de Nginx
-    ansible.builtin.file:
-      path: /etc/nginx/sites-enabled/default
-      state: absent
   - name: Reiniciar servicio de Nginx
-    service: name=nginx state=started
+    service: name=nginx state=reloaded
 ...

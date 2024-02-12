@@ -1,16 +1,47 @@
 # Instalación
 
-To install the full ansible package run:
+## Fedora (equipo local)
+La instalación de Ansible se hará en un equipo local con **Fedora Linux 39 (Workstation Edition)**, versión de kernel **Linux 6.6.13-200.fc39.x86_64**, por lo que desde la documentación oficial buscaremos la [instalación para Fedora](https://docs.ansible.com/ansible/latest/installation_guide/installation_distros.html#installing-ansible-on-fedora-linux).
+
+Actualizar los repositorios locales
+```
+$ sudo dnf update
+```
+
+Instalar el paquete completo de Ansible
 ```
 $ sudo dnf install ansible
 ```
 
-To install the minimal ansible-core package run:
+También se puede instalar el paquete mínimo de Ansible con el siguiente comando
 ```
 $ sudo dnf install ansible-core
 ```
 
-Verificar la instalación de los paquetes
+## Ubuntu (EC2)
+Se utilizará una imágen de software (AMI) en AWS por lo que también se debe de instalar en una distribución Ubuntu. Instalación de Ansible en [Ubuntu](https://docs.ansible.com/ansible/latest/installation_guide/installation_distros.html#installing-ansible-on-ubuntu)
+
+Actualizar los repositorios
+```
+$ sudo apt update
+```
+
+Instalar el administrador de repositorios
+```
+$ sudo apt install software-properties-common
+```
+
+Agregar el repositorio oficial de Ansible
+```
+$ sudo add-apt-repository --yes --update ppa:ansible/ansible
+```
+
+Instalar el paquete completo de Ansible
+```
+$ sudo apt install ansible
+```
+
+Para ambas distribuciones se puede verificar la instalación de los paquetes de la siguiente forma
 ```
 $ ansible --version
 ansible [core 2.16.2]
@@ -24,9 +55,137 @@ ansible [core 2.16.2]
   libyaml = True 
 ```
 
-# Configuración
+Se utilizarán dos ambientes (local y remoto EC2) para generar el `playbook`, el equipo local ayudará a economizar recursos ya que los recursos locales (Docker container) permitirán hacer pruebas sin consumir la capa gratuita de AWS. A través del archivo local se podrá generar el remoto de EC2.
 
-## [Inventario](https://docs.ansible.com/ansible/latest/inventory_guide/intro_inventory.html)
+# Playbooks
+Se utiliza el estándar opcional para archivos YAML en el que todos los archivos empiezan por tres guiones "---" y terminan en tres puntos "...". 
+
+## Local
+  Archivo: [ansible/nginx_from_local.yml](ansible/nginx_from_local.yml)
+
+  Previo a generar un archivo `*.yml`, se levantó un contenedor de Docker con Ubuntu 22.04 y ahí se hizo una instalación normal de Nginx, es decir, la ejecución de paquetes con `apt`. Los detalles se pueden visualizar en el archivo [Docker.md](Docker.md).
+
+  Utilizando el orden y los comando ejecutados en el contenedor de docker se generó el archivo **nginx_from_local.yml**. Se utilizó la documentación oficial del listado de [módulos de Ansible](https://docs.ansible.com/ansible/2.9/modules/list_of_all_modules.html):
+  ```
+  ---
+  - hosts: ubuntu_ssh_i
+    tasks:
+    - name: Actualizar repositorios -> "apt update"
+      apt: 
+          update-cache: yes
+    - name: Instalar Nginx -> "apt install nginx"
+      apt: name=nginx state=present
+    - name: Copiar sitio web React+Vite
+      copy:
+          src: /home/feli/Documentos/docker_volumes/dist/
+          dest: /var/www/sa_practica1
+    - name: Crear archivo de configuración en Nginx para el sitio web copiado
+      copy:
+          dest: /etc/nginx/sites-enabled/sa_practica1
+          content: "server {
+                          listen 80;
+                          listen [::]:80;
+    
+                          #server_name example.ubuntu.com;
+
+                          root /var/www/sa_practica1;
+                          index index.html;
+
+                          location / {
+                                  try_files $uri $uri/ =404;
+                          }
+                    }"
+    - name: Eliminar archivo 'default' en sites-enabled para eliminar el sitio predeterminado de Nginx
+      ansible.builtin.file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+    - name: Reiniciar servicio de Nginx
+      service: name=nginx state=started
+  ...
+  ```
+
+  En donde:
+
+  1. **hosts**: `ubuntu_ssh_i` es el alias que le daremos al host en donde se ejecutará el archivo.    
+  2. **Actualizar repositorios -> "apt update"**: Utiliza el [módulo `apt`](https://docs.ansible.com/ansible/2.9/modules/apt_module.html#apt-module) con la propiedad `update-cache: yes` para que actualice los repositorios.
+  3. **Instalar Nginx -> "apt install nginx"**: Instala Ngix a través del [módulo `apt`](https://docs.ansible.com/ansible/2.9/modules/apt_module.html#apt-module) con las propiedades de nombre del paquete y la versión.
+  4. **Copiar sitio web React+Vite**: Copiar el código fuente desde el equipo local hacia el remoto a través del [módulo copy](https://docs.ansible.com/ansible/2.9/modules/copy_module.html#copy-module).
+  5. **Crear archivo de configuración en Nginx para el sitio web copiado**: Utilizar el [módulo copy](https://docs.ansible.com/ansible/2.9/modules/copy_module.html#copy-module) para crear el nuevo archivo.
+  6. **Eliminar archivo 'default' en sites-enabled para eliminar el sitio predeterminado de Nginx**: Eliminar el archivvo con el [módulo file](https://docs.ansible.com/ansible/latest/collections/ansible/builtin/file_module.html)
+  7. **Reiniciar servicio de Nginx**: Iniciar servicios con el [módulo service](https://docs.ansible.com/ansible/2.9/modules/service_module.html#service-module)
+
+## EC2
+  Archivo: [ansible/nginx_from_local.yml](ansible/nginx_from_ec2.yml)
+
+ A diferencia del archivo local, el archivo remoto tuvo ligeras modificaciones. La estructura de instrucciones final quedo así:
+  ```
+  ---
+  - hosts: nginx_ec2
+    become: yes
+    tasks:
+    - name: Actualizar repositorios -> "apt update"
+      apt: 
+          update-cache: yes
+    - name: Instalar Nginx -> "apt install nginx"
+      apt: name=nginx state=present
+    - name: Copiar sitio web React+Vite
+      copy:
+          src: /home/ubuntu/
+          dest: /var/www/sa_practica1
+          remote_src: true
+    - name: Crear archivo de configuración en Nginx para el sitio web copiado
+      copy:
+          dest: /etc/nginx/sites-enabled/sa_practica1
+          content: "server {
+                          listen 81;
+                          listen [::]:81;
+    
+                          #server_name example.ubuntu.com;
+
+                          root /var/www/sa_practica1;
+                          index index.html;
+
+                          location / {
+                                  try_files $uri $uri/ =404;
+                          }
+                    }"
+    - name: Reiniciar servicio de Nginx
+      service: name=nginx state=reloaded
+  ...
+  ```
+
+  Diferencias:
+
+  1. **hosts**: `nginx_ec2` es el nuevo alias que se utilizará. Ahora se tiene el atributo `become: yes` que indica que las instrucciones se ejecutarán con permisos de _super usuario_.
+  2. **Copiar sitio web React+Vite**: Se modifican los paths y ahora se utiliza el atributo `remote_src: true` que indica que las copias serán de remoto a remoto, no local a remoto como en el archivo anterior.
+  5. **Crear archivo de configuración en Nginx para el sitio web copiado**: Se modifica el número de puerto que se utilizará en EC2.
+  6. **Eliminar archivo 'default' en sites-enabled para eliminar el sitio predeterminado de Nginx**: Como se modificó el número de puerto, ahora no es necesario eliminar el archivo 'default'.
+  7. **Reiniciar servicio de Nginx**: Ahora se utiliza el atributo `state=reloaded`.
+
+# Ejecutar playbook
+Las pruebas de Ansible se harán en local, los resultados de las pruebas remotas se visualizarán en el terminal que ejecuta [Terraform](Terraform.md).
+
+## Local
+Se crea un archivo de hosts con el alias y las variables. El nombre del archivo es `hosts`, pero puede ser otro, y el contenido es el siguiente:
+```
+ubuntu_ssh_i ansible_host=172.17.0.2 ansible_connection=ssh ansible_user=root ansible_password=pass
+```
+En el comando que se ejecutará se indica el archivo de `hosts` que se utilizará, en él se encuentra la IP de nuestro contenedor.
+```
+$ ansible-playbook nginx_from_local.yml -i hosts
+```
+En esta instrucción no se incluyó la `private key` porque solo era un contenedor local. Para hacer una conexión SSH hacia un contenedor se deben seguir las instrucciones de la sección **Docker SSH** que se encuentran al final de este archivo.
+
+## EC2
+En el archivo [terraform/main.tf](terraform/main.tf) se encuentra escrito el comando a ejecutar en EC2, dentro del `resource "aws_instance" "ansible" {}` se encuentra un `provisioner "remote-exec" {}` con el comando:
+```
+ansible-playbook --private-key key_pair nginx_from_ec2.yml -i hosts
+```
+En donde `--private-key` es el parámetro que solicita la llave privada.
+
+# Ansible en línea de comandos
+
+### [Inventario](https://docs.ansible.com/ansible/latest/inventory_guide/intro_inventory.html)
 
 Ver el inventario global
 ```
@@ -69,61 +228,7 @@ $ ansible localhost -m apt -a 'name= vim state=present' -b -K
 ```
 el parámetro `-b` indica que se utilizará el usuario **root* y `-K` es para que solicite la contraseña en la terminal
 
-### Playbooks
-
-creamos un archivo con extensión `*.yml` con un contenido similar al siguiente:
-```
----
-
-- hosts: all
-  become: true
-  tasks:
-  - name: instala vim
-    apt: name=vim state=present
-  - name: saluda  
-    shell: echo hola
-```
-
-el parámetro **become** indica que se utilizará *super usuario* para ejecutar las tasks. El atributo become puede ir dentro de una task únicamente, como por ejemplo:
-```
----
-
-- hosts: all
-  tasks:
-  - name: instala vim
-    apt: name=vim state=present
-    become: true
-  - name: saluda  
-    shell: echo hola
-```
-
-Para ejecutar el nuevo archivo se puede utilizar `ansible-playbook`
-```
-$ ansible-playbook archivo.yml -K
-```
-
-### Módulo [Service](https://docs.ansible.com/ansible/2.9/modules/service_module.html#service-module)
-
-Con éste comando se pueden iniciar/reiniciar/detener servicios desde ansible, entre otros
-```
----
-
-- hosts: all
-  become: true
-  tasks:
-  - name: Detener nginx  
-    service: name=nginx state=stopped
-```
-Sería similar a ejecutar el siguiente comando dentro del servidor:
-```
-$ service nginx stop
-```
-
-
-
-## Docker
-[How to setup SSH on Docker Container to access it remotely](https://www.youtube.com/watch?v=GicWz2OF0sk)
-Crear un contenedor nuevo
+## Docker SSH
 
 Creamos el nuevo contenedor con dos puertos abiertos y corriendo en background.
 ```
@@ -215,33 +320,9 @@ $ ansible ubuntu_ssh_i -m ping -i hosts
 ```
 El parámetro `-i` hace referencia a _Inventory_ (hosts). El comando ad-hoc de Ansible fue ejecutado correctamente
 
-### Archivo de automatización
-Crearemos el `playbook` en el archivo `nginx_website.yml` con el siguiente contenido inicial para pruebas:
-```
----
-- hosts: ubuntu_ssh_i
-  tasks:
-  - name: Actualizar repositorios -> "apt update"
-    apt: 
-        update-cache: yes
-  - name: Saludar
-    shell: echo hola
-...
-```
-Se utiliza el estándar opcional para archivos YAML en el que todos los archivos empiezan por tres guiones "---" y terminan en tres puntos "...". Se indica el `host` que se utilizará de nuestro archivo de hosts locales. Se agregaron solo 2 task para la prueba de ejecución.
-
-Ejecutar el playbook
-```
-$ ansible-playbook nginx_website.yml -i hosts
-```
-
-Una vez que la prueba haya finalizado correctamente se modificará el archivo y se creará un playbook completo. El siguiente es un ejemplo de contenido:
-```
-```
 
 
-
-### Fuentes
+## Fuentes
 1. [ANSIBLE: LA REINA DE LA AUTOMATIZACIÓN](https://www.youtube.com/watch?v=yB7oWJbMd3A)
 2. [Curso Ansible desde CERO en 5 minutos| Montar una web en 5 minutos Español gratis.](https://www.youtube.com/watch?v=sIysgB2fCjw)
 3. [Ansible: Prepara tus servidores con un comando](https://www.youtube.com/watch?v=KOtagN2fRTM)
@@ -258,3 +339,4 @@ Una vez que la prueba haya finalizado correctamente se modificará el archivo y 
 14. [Ansible – 8. Handlers](https://www.youtube.com/watch?v=G97sqHIG38w&list=PLTd5ehIj0goP2RSCvTiz3-Cko8U6SQV1P&index=9)
 15. [Configuring Ansible — Ansible Documentation](https://docs.ansible.com/ansible/latest/installation_guide/intro_configuration.html)
 16. [How to build your inventory — Ansible Documentation](https://docs.ansible.com/ansible/latest/inventory_guide/intro_inventory.html)
+17. [How to setup SSH on Docker Container to access it remotely](https://www.youtube.com/watch?v=GicWz2OF0sk)

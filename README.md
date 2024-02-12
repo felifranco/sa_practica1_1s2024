@@ -16,7 +16,13 @@ El objetivo principal es subir esta página web a un proveedor de nube (se recom
 Posteriormente, mediante el uso de **Ansible**, se instalará y configurará Nginx, un servidor de entrega de contenido web, que permitirá desplegar la página web.
 
 ## Sitio Web
+Se creó un sitio web con ReactJS y Vite, los detalles se pueden encontrar en el archivo [Site.md](Site.md).
 
 ## Terraform
+Se utilizó Terraform para crear la infraestructura de la práctica, los detalles de la instalación y los archivos de configuración se pueden encontrar en [Terraform.md](Terraform.md).
 
 ## Ansible
+Para generar el archivo `*.yml` final, se utilizó Docker y el equipo local, cuando ya se tenía una versión funcional del archivo local se hicieron unas pequeñas modificaciones para que pudiera ser utilizado en EC2 y la nueva infraestructura. Más detalles en [Ansible.md](Ansible.md).
+
+## Docker
+Docker fue fundamental en la realización de ésta práctica, se utilizó para emular el funcionamiento de EC2 tanto para `Ansible` como para `Terraform`. Se puede encontrar la documentación en [Docker.md](Docker.md) y en el archivo [terraform_docker/local.tf](terraform_docker/local.tf).
